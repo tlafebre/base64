@@ -3,11 +3,11 @@
 
 use std::collections::HashMap;
 
-const BASE64_ALPHABET: [char; 65] = [
+const BASE64_ALPHABET: [char; 64] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
     'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4',
-    '5', '6', '7', '8', '9', '+', '-', '=',
+    '5', '6', '7', '8', '9', '+', '-',
 ];
 
 fn str_to_octets(string: String) -> Vec<Vec<u8>> {
@@ -23,11 +23,21 @@ fn str_to_octets(string: String) -> Vec<Vec<u8>> {
     octets
 }
 
-fn base64_bytes_to_sextets(bytes: Vec<u8>) -> Vec<Vec<u8>> {
-    let mut sextets: Vec<Vec<u8>> = Vec::new();
+fn base64_bytes_to_sextets(bytes: Vec<u8>) -> Vec<Vec<Option<u8>>> {
+    let mut sextets: Vec<Vec<Option<u8>>> = Vec::new();
 
-    for c in bytes.chunks(4) {
-        sextets.push(c.to_vec());
+    for chunk in bytes.chunks(4) {
+        let mut chunk_bytes: Vec<Option<u8>> = Vec::new();
+        for byte in chunk {
+            chunk_bytes.push(Some(*byte));
+        }
+        match chunk_bytes.len() {
+            4 => (),
+            3 => chunk_bytes.push(None),
+            2 => chunk_bytes.append(&mut vec![None, None]),
+            _ => (),
+        }
+        sextets.push(chunk_bytes);
     }
 
     sextets
@@ -58,6 +68,27 @@ fn extract_third_char_bits(second_byte: u8, third_byte: u8) -> u8 {
 
 fn extract_fourth_char_bits(third_byte: u8) -> u8 {
     0b00111111 & third_byte
+}
+
+fn compose_first_byte(first_sextet: Option<u8>, second_sextet: Option<u8>) -> u8 {
+    (first_sextet.unwrap() & 0b111111) << 2 | (second_sextet.unwrap() & 0b110000) >> 4
+}
+
+fn compose_second_byte(second_sextet: Option<u8>, third_sextet: Option<u8>) -> u8 {
+    match third_sextet {
+        Some(t) => (second_sextet.unwrap() & 0b001111) << 4 | (t & 0b111100) >> 2,
+        None => (second_sextet.unwrap() & 0b001111) << 4 | (0b000000) >> 2,
+    }
+}
+
+fn compose_third_byte(third_sextet: Option<u8>, fourth_sextet: Option<u8>) -> u8 {
+    match third_sextet {
+        Some(t) => match fourth_sextet {
+            Some(f) => (t & 0b000011) << 6 | (f & 0b111111),
+            None => (t & 0b000011) << 6 | 0b000000,
+        },
+        None => return 0b00000000,
+    }
 }
 
 fn compose_sextets_to_bytes(sextets: Vec<u8>) -> Vec<u32> {
@@ -99,7 +130,6 @@ fn encode(string: String) -> String {
             }
         }
     }
-
     chars
         .into_iter()
         .map(|c| encoding_table[&usize::from(c)])
@@ -115,38 +145,53 @@ fn decode(b64_string: String) -> String {
     let mut bytes: Vec<u8> = Vec::new();
 
     for c in b64_string.chars() {
-        bytes.push(decoding_table[&c] as u8);
-    }
-
-    let mut string = String::new();
-    let mut v: Vec<char> = Vec::new();
-    for sextet_group in base64_bytes_to_sextets(bytes) {
-        let byte_group = compose_sextets_to_bytes(sextet_group);
-        for byte in byte_group {
-            v.push(byte.clone() as u8 as char);
+        if c != '=' {
+            bytes.push(decoding_table[&c] as u8);
         }
-        //let u8s: Vec<u8> = byte_group.iter().map(|i| *i as u8).collect();
-        //let test: Vec<char> = u8s.iter().map(|n| *n as char).collect();
-
-        //let word: String = test.iter().collect();
-        //println!("{:?}", word);
-
-        //string.push_str(&std::str::from_utf8(&u8s[..]).unwrap());
-        //string.push_str(&byte.to_string());
-
-        //string.push_str(&std::str::from_utf8(&byte_group[..]).unwrap().to_string());
     }
+
+    let sextet_groups = base64_bytes_to_sextets(bytes);
+    let mut v: Vec<char> = Vec::new();
+    for group in sextet_groups {
+        v.push(compose_first_byte(group[0], group[1]) as char);
+        v.push(compose_second_byte(group[1], group[2]) as char);
+        v.push(compose_third_byte(group[2], group[3]) as char);
+    }
+
+    //for sextet_group in base64_bytes_to_sextets(bytes) {
+    //    let byte_group = compose_sextets_to_bytes(sextet_group);
+    //    for byte in byte_group {
+    //        v.push(byte.clone() as u8 as char);
+    //    }
+    //let u8s: Vec<u8> = byte_group.iter().map(|i| *i as u8).collect();
+    //let test: Vec<char> = u8s.iter().map(|n| *n as char).collect();
+
+    //let word: String = test.iter().collect();
+    //println!("{:?}", word);
+
+    //string.push_str(&byte.to_string());
+
+    //string.push_str(&std::str::from_utf8(&byte_group[..]).unwrap().to_string());
+    //}
 
     v.iter().collect::<String>()
 }
 
 fn main() {
+    //println!("{:?}", compose_first_byte(25, 32));
+    //println!("{:?}", compose_second_byte(32, None));
+    //println!("{:?}", compose_third_byte(Some(61), Some(47)));
+
+    //println!("{:?}", compose_first_byte(25, 38));
+    //println!("{:#b}", compose_second_byte(38, None));
     let s = String::from("Zm9vYmFy");
     println!("{}", decode(s));
     let s2 = String::from("Zm9vYmE=");
     println!("{}", decode(s2));
     let s3 = String::from("Zg==");
     println!("{}", decode(s3));
+    let s4 = String::from("VGplZXJkIGlzIGRlIGJlc3RlIHJ1c3QgcHJvZ3JhbW1ldXI=");
+    println!("{}", decode(s4));
 
     //println!("{}", decode(s));
     //println!(
@@ -157,11 +202,11 @@ fn main() {
 
     //println!("{:?}", &std::str::from_utf8(&[65, 66, 84]));
 
-    assert_eq!(encode(String::from("")), "");
-    assert_eq!(encode(String::from("f")), "Zg==");
-    assert_eq!(encode(String::from("fo")), "Zm8=");
-    assert_eq!(encode(String::from("foo")), "Zm9v");
-    assert_eq!(encode(String::from("foob")), "Zm9vYg==");
-    assert_eq!(encode(String::from("fooba")), "Zm9vYmE=");
-    assert_eq!(encode(String::from("foobar")), "Zm9vYmFy");
+    //assert_eq!(encode(String::from("")), "");
+    //assert_eq!(encode(String::from("f")), "Zg==");
+    //assert_eq!(encode(String::from("fo")), "Zm8=");
+    //assert_eq!(encode(String::from("foo")), "Zm9v");
+    //assert_eq!(encode(String::from("foob")), "Zm9vYg==");
+    //assert_eq!(encode(String::from("fooba")), "Zm9vYmE=");
+    //assert_eq!(encode(String::from("foobar")), "Zm9vYmFy");
 }

@@ -1,6 +1,3 @@
-// move to library
-// make it work on stdin
-
 use std::collections::HashMap;
 
 const BASE64_ALPHABET: [char; 64] = [
@@ -78,7 +75,7 @@ fn compose_third_byte(third_sextet: Option<u8>, fourth_sextet: Option<u8>) -> u8
     }
 }
 
-fn encode(string: String) -> String {
+fn encode(string: String) -> Result<String, Box<dyn std::error::Error>> {
     let encoding_table: HashMap<usize, &char> = BASE64_ALPHABET.iter().enumerate().collect();
     let octets = str_to_octets(string);
     let mut chars: Vec<Option<u8>> = Vec::new();
@@ -104,7 +101,7 @@ fn encode(string: String) -> String {
             }
         }
     }
-    chars
+    let string = chars
         .into_iter()
         .map(|o| {
             if o.is_some() {
@@ -113,10 +110,11 @@ fn encode(string: String) -> String {
                 &'='
             }
         })
-        .collect::<String>()
+        .collect::<String>();
+    Ok(string)
 }
 
-fn decode(b64_string: String) -> String {
+fn decode(b64_string: String) -> Result<String, Box<dyn std::error::Error>> {
     let decoding_table: HashMap<char, usize> = BASE64_ALPHABET
         .iter()
         .enumerate()
@@ -133,33 +131,32 @@ fn decode(b64_string: String) -> String {
     }
 
     let sextet_groups = base64_bytes_to_sextets(bytes);
-    let mut v: Vec<char> = Vec::new();
+    let mut v: Vec<u8> = Vec::new();
     for group in sextet_groups {
-        v.push(compose_first_byte(group[0], group[1]) as char);
-        v.push(compose_second_byte(group[1], group[2]) as char);
-        v.push(compose_third_byte(group[2], group[3]) as char);
+        v.push(compose_first_byte(group[0], group[1]));
+        v.push(compose_second_byte(group[1], group[2]));
+        v.push(compose_third_byte(group[2], group[3]));
     }
 
-    v.iter()
-        .collect::<String>()
+    Ok(std::str::from_utf8(v.as_slice())?
         .trim_matches(char::from(0))
-        .to_string()
+        .to_string())
 }
 
 fn main() {
-    assert_eq!(encode(String::from("")), "");
-    assert_eq!(encode(String::from("f")), "Zg==");
-    assert_eq!(encode(String::from("fo")), "Zm8=");
-    assert_eq!(encode(String::from("foo")), "Zm9v");
-    assert_eq!(encode(String::from("foob")), "Zm9vYg==");
-    assert_eq!(encode(String::from("fooba")), "Zm9vYmE=");
-    assert_eq!(encode(String::from("foobar")), "Zm9vYmFy");
+    assert_eq!(encode(String::from("")).unwrap(), "");
+    assert_eq!(encode(String::from("f")).unwrap(), "Zg==");
+    assert_eq!(encode(String::from("fo")).unwrap(), "Zm8=");
+    assert_eq!(encode(String::from("foo")).unwrap(), "Zm9v");
+    assert_eq!(encode(String::from("foob")).unwrap(), "Zm9vYg==");
+    assert_eq!(encode(String::from("fooba")).unwrap(), "Zm9vYmE=");
+    assert_eq!(encode(String::from("foobar")).unwrap(), "Zm9vYmFy");
 
-    assert_eq!(decode(String::from("")), "");
-    assert_eq!(decode(String::from("Zg==")), "f");
-    assert_eq!(decode(String::from("Zm8=")), "fo");
-    assert_eq!(decode(String::from("Zm9v")), "foo");
-    assert_eq!(decode(String::from("Zm9vYg==")), "foob");
-    assert_eq!(decode(String::from("Zm9vYmE=")), "fooba");
-    assert_eq!(decode(String::from("Zm9vYmFy")), "foobar");
+    assert_eq!(decode(String::from("")).unwrap(), "");
+    assert_eq!(decode(String::from("Zg==")).unwrap(), "f");
+    assert_eq!(decode(String::from("Zm8=")).unwrap(), "fo");
+    assert_eq!(decode(String::from("Zm9v")).unwrap(), "foo");
+    assert_eq!(decode(String::from("Zm9vYg==")).unwrap(), "foob");
+    assert_eq!(decode(String::from("Zm9vYmE=")).unwrap(), "fooba");
+    assert_eq!(decode(String::from("Zm9vYmFy")).unwrap(), "foobar");
 }

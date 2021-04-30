@@ -38,7 +38,8 @@ fn extract_fourth_char_bits(third_byte: u8) -> u8 {
 
 pub fn encode(string: String) -> Result<String, Box<dyn std::error::Error>> {
     let encoding_table: HashMap<usize, &char> = BASE64_ALPHABET.iter().enumerate().collect();
-    let octets = str_to_octets(string);
+    let clean_string = string.trim_right();
+    let octets = str_to_octets(clean_string.to_string());
     let mut chars: Vec<Option<u8>> = Vec::new();
 
     for og in octets {
@@ -62,7 +63,8 @@ pub fn encode(string: String) -> Result<String, Box<dyn std::error::Error>> {
             }
         }
     }
-    let string = chars
+
+    let base64_string: String = chars
         .into_iter()
         .map(|o| {
             if o.is_some() {
@@ -71,8 +73,9 @@ pub fn encode(string: String) -> Result<String, Box<dyn std::error::Error>> {
                 &'='
             }
         })
-        .collect::<String>();
-    Ok(string)
+        .collect();
+
+    Ok(base64_string)
 }
 
 #[cfg(test)]

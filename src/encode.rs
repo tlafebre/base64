@@ -7,9 +7,8 @@ const BASE64_ALPHABET: [char; 64] = [
     '5', '6', '7', '8', '9', '+', '-',
 ];
 
-fn str_to_octets(string: String) -> Vec<Vec<u8>> {
-    let octets: Vec<Vec<u8>> = string
-        .as_bytes()
+fn data_to_octets(data: &[u8]) -> Vec<Vec<u8>> {
+    let octets = data
         .chunks(3)
         .map(|c| match c.len() {
             1 => vec![c[0]],
@@ -36,10 +35,9 @@ fn extract_fourth_char_bits(third_byte: u8) -> u8 {
     0b00111111 & third_byte
 }
 
-pub fn encode(string: String) -> Result<String, Box<dyn std::error::Error>> {
+pub fn encode(data: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     let encoding_table: HashMap<usize, &char> = BASE64_ALPHABET.iter().enumerate().collect();
-    let clean_string = string.trim_right();
-    let octets = str_to_octets(clean_string.to_string());
+    let octets = data_to_octets(data);
     let mut chars: Vec<Option<u8>> = Vec::new();
 
     for og in octets {
@@ -85,43 +83,49 @@ mod tests {
     fn test_empty_string_to_octets() {
         let s = String::from("");
         let expected: Vec<Vec<u8>> = vec![];
-        assert_eq!(str_to_octets(s), expected);
+        assert_eq!(data_to_octets(s.as_bytes()), expected);
     }
 
     #[test]
     fn test_string_to_octets() {
         let s = String::from("foobar");
         let expected: Vec<Vec<u8>> = vec![vec![102, 111, 111], vec![98, 97, 114]];
-        assert_eq!(str_to_octets(s), expected);
+        assert_eq!(data_to_octets(s.as_bytes()), expected);
     }
 
     #[test]
     fn test_string_to_less_than_perfect_octets() {
         let s = String::from("foob");
         let expected: Vec<Vec<u8>> = vec![vec![102, 111, 111], vec![98]];
-        assert_eq!(str_to_octets(s), expected);
+        assert_eq!(data_to_octets(s.as_bytes()), expected);
     }
 
     #[test]
     fn encode_empty_string() {
-        assert_eq!(encode(String::from("")).unwrap(), "");
+        assert_eq!(encode(String::from("").as_bytes()).unwrap(), "");
     }
 
     #[test]
     fn encode_unpadded() {
-        assert_eq!(encode(String::from("foo")).unwrap(), "Zm9v");
-        assert_eq!(encode(String::from("foobar")).unwrap(), "Zm9vYmFy");
+        assert_eq!(encode(String::from("foo").as_bytes()).unwrap(), "Zm9v");
+        assert_eq!(
+            encode(String::from("foobar").as_bytes()).unwrap(),
+            "Zm9vYmFy"
+        );
     }
 
     #[test]
     fn encode_with_double_pad() {
-        assert_eq!(encode(String::from("f")).unwrap(), "Zg==");
-        assert_eq!(encode(String::from("foob")).unwrap(), "Zm9vYg==");
+        assert_eq!(encode(String::from("f").as_bytes()).unwrap(), "Zg==");
+        assert_eq!(encode(String::from("foob").as_bytes()).unwrap(), "Zm9vYg==");
     }
 
     #[test]
     fn encode_with_single_pad() {
-        assert_eq!(encode(String::from("fo")).unwrap(), "Zm8=");
-        assert_eq!(encode(String::from("fooba")).unwrap(), "Zm9vYmE=");
+        assert_eq!(encode(String::from("fo").as_bytes()).unwrap(), "Zm8=");
+        assert_eq!(
+            encode(String::from("fooba").as_bytes()).unwrap(),
+            "Zm9vYmE="
+        );
     }
 }

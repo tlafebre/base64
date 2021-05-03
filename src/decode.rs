@@ -46,7 +46,7 @@ fn compose_third_byte(third_sextet: Option<u8>, fourth_sextet: Option<u8>) -> u8
     }
 }
 
-pub fn decode(b64_string: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+pub fn decode(b64_string: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let decoding_table: HashMap<char, usize> = BASE64_ALPHABET
         .iter()
         .enumerate()
@@ -70,9 +70,7 @@ pub fn decode(b64_string: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
         v.push(compose_third_byte(group[2], group[3]));
     }
 
-    Ok(std::str::from_utf8(v.as_slice())?
-        .trim_matches(char::from(0))
-        .to_string())
+    Ok(v)
 }
 
 #[cfg(test)]

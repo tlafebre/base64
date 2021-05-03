@@ -24,10 +24,8 @@ fn main() {
 
     if args.is_present("d") {
         let sanitized: Vec<u8> = buf.into_iter().clone().filter(|b| *b != 10).collect();
-        print!("\n");
-        io::stdout().write_all(decode::decode(&sanitized).unwrap().as_bytes());
+        io::stdout().write_all(&decode::decode(&sanitized).unwrap());
     } else {
         io::stdout().write_all(encode::encode(&buf).unwrap().as_bytes());
-        print!("\n");
     }
 }

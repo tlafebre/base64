@@ -108,6 +108,7 @@ mod tests {
     #[test]
     fn encode_unpadded() {
         assert_eq!(encode(String::from("foo").as_bytes()).unwrap(), "Zm9v");
+        assert_eq!(encode(String::from("AMT").as_bytes()).unwrap(), "QU1U");
         assert_eq!(
             encode(String::from("foobar").as_bytes()).unwrap(),
             "Zm9vYmFy"

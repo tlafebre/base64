@@ -46,7 +46,7 @@ fn compose_third_byte(third_sextet: Option<u8>, fourth_sextet: Option<u8>) -> u8
     }
 }
 
-pub fn decode(b64_string: String) -> Result<String, Box<dyn std::error::Error>> {
+pub fn decode(b64_string: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
     let decoding_table: HashMap<char, usize> = BASE64_ALPHABET
         .iter()
         .enumerate()
@@ -54,9 +54,9 @@ pub fn decode(b64_string: String) -> Result<String, Box<dyn std::error::Error>> 
         .collect();
     let mut bytes: Vec<Option<u8>> = Vec::new();
 
-    for c in b64_string.chars() {
-        if c != '=' {
-            bytes.push(Some(decoding_table[&c] as u8));
+    for byte in b64_string {
+        if *byte != 61 {
+            bytes.push(Some(decoding_table[&(*byte as char)] as u8));
         } else {
             bytes.push(None)
         }
@@ -81,24 +81,24 @@ mod tests {
 
     #[test]
     fn decode_empty_string() {
-        assert_eq!(decode(String::from("")).unwrap(), "");
+        assert_eq!(decode(b"").unwrap(), "");
     }
 
     #[test]
     fn decode_unpadded() {
-        assert_eq!(decode(String::from("Zm9v")).unwrap(), "foo");
-        assert_eq!(decode(String::from("Zm9vYmFy")).unwrap(), "foobar");
+        assert_eq!(decode(b"Zm9v").unwrap(), "foo");
+        assert_eq!(decode(b"Zm9vYmFy").unwrap(), "foobar");
     }
 
     #[test]
     fn decode_with_double_pad() {
-        assert_eq!(decode(String::from("Zg==")).unwrap(), "f");
-        assert_eq!(decode(String::from("Zm9vYg==")).unwrap(), "foob");
+        assert_eq!(decode(b"Zg==").unwrap(), "f");
+        assert_eq!(decode(b"Zm9vYg==").unwrap(), "foob");
     }
 
     #[test]
     fn decode_with_single_pad() {
-        assert_eq!(decode(String::from("Zm8=")).unwrap(), "fo");
-        assert_eq!(decode(String::from("Zm9vYmE=")).unwrap(), "fooba");
+        assert_eq!(decode(b"Zm8=").unwrap(), "fo");
+        assert_eq!(decode(b"Zm9vYmE=").unwrap(), "fooba");
     }
 }

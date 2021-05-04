@@ -55,7 +55,7 @@ pub fn decode(b64_string: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> 
     let mut bytes: Vec<Option<u8>> = Vec::new();
 
     for byte in b64_string {
-        if *byte != 61 {
+        if *byte != b'=' {
             bytes.push(Some(decoding_table[&(*byte as char)] as u8));
         } else {
             bytes.push(None)
@@ -68,6 +68,11 @@ pub fn decode(b64_string: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> 
         v.push(compose_first_byte(group[0], group[1]));
         v.push(compose_second_byte(group[1], group[2]));
         v.push(compose_third_byte(group[2], group[3]));
+    }
+    if let Some(n) = v.last() {
+        if *n == 0 {
+            v.pop();
+        }
     }
 
     Ok(v)

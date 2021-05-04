@@ -1,6 +1,3 @@
-// trim newlines
-// newline before output
-
 mod decode;
 mod encode;
 

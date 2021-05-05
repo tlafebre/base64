@@ -66,15 +66,13 @@ pub fn decode(b64_string: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> 
     let mut v: Vec<u8> = Vec::new();
     for group in sextet_groups {
         v.push(compose_first_byte(group[0], group[1]));
-        v.push(compose_second_byte(group[1], group[2]));
-        v.push(compose_third_byte(group[2], group[3]));
-    }
-    if let Some(n) = v.last() {
-        if *n == 0 {
-            v.pop();
+        if group[2].is_some() {
+            v.push(compose_second_byte(group[1], group[2]));
+        }
+        if group[3].is_some() {
+            v.push(compose_third_byte(group[2], group[3]));
         }
     }
-
     Ok(v)
 }
 

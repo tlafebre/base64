@@ -129,4 +129,22 @@ mod tests {
             "Zm9vYmE="
         );
     }
+
+    #[test]
+    fn encode_with_newlines() {
+        assert_eq!(
+            encode(String::from("foo\nbar").as_bytes()).unwrap(),
+            "Zm9vCmJhcg=="
+        );
+    }
+
+    #[test]
+    fn encode_binary_data() {
+        let binary_data: [u8; 5] = [222, 216, 77, 179, 186];
+
+        assert_eq!(encode(&binary_data[..1]).unwrap(), String::from("3g=="));
+        assert_eq!(encode(&binary_data[..2]).unwrap(), String::from("3tg="));
+        assert_eq!(encode(&binary_data[..3]).unwrap(), String::from("3thN"));
+        assert_eq!(encode(&binary_data[..]).unwrap(), String::from("3thNs7o="));
+    }
 }

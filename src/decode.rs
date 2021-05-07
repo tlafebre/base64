@@ -86,24 +86,34 @@ mod tests {
 
     #[test]
     fn decode_empty_string() {
-        assert_eq!(decode(b"").unwrap(), "");
+        assert_eq!(decode(b"").unwrap(), b"");
     }
 
     #[test]
     fn decode_unpadded() {
-        assert_eq!(decode(b"Zm9v").unwrap(), "foo");
-        assert_eq!(decode(b"Zm9vYmFy").unwrap(), "foobar");
+        assert_eq!(decode(b"Zm9v").unwrap(), b"foo");
+        assert_eq!(decode(b"Zm9vYmFy").unwrap(), b"foobar");
     }
 
     #[test]
     fn decode_with_double_pad() {
-        assert_eq!(decode(b"Zg==").unwrap(), "f");
-        assert_eq!(decode(b"Zm9vYg==").unwrap(), "foob");
+        assert_eq!(decode(b"Zg==").unwrap(), b"f");
+        assert_eq!(decode(b"Zm9vYg==").unwrap(), b"foob");
     }
 
     #[test]
     fn decode_with_single_pad() {
-        assert_eq!(decode(b"Zm8=").unwrap(), "fo");
-        assert_eq!(decode(b"Zm9vYmE=").unwrap(), "fooba");
+        assert_eq!(decode(b"Zm8=").unwrap(), b"fo");
+        assert_eq!(decode(b"Zm9vYmE=").unwrap(), b"fooba");
+    }
+
+    #[test]
+    fn decode_invalid_input() {
+        assert_eq!(decode(b"Zm9vYmE"), Err("Invalid data"));
+    }
+
+    #[test]
+    fn decode_to_binary_data() {
+        assert_eq!(decode(b"MIID").unwrap(), [48, 130, 3]);
     }
 }

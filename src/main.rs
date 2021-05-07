@@ -2,8 +2,6 @@ mod decode;
 mod encode;
 
 use clap::{App, Arg};
-use std::env::args;
-use std::fs::File;
 use std::io::{self, Read, Write};
 
 fn main() {
@@ -17,12 +15,22 @@ fn main() {
         .get_matches();
 
     let mut buf: Vec<u8> = Vec::new();
-    let input = io::stdin().read_to_end(&mut buf);
+    let _ = io::stdin().read_to_end(&mut buf);
 
     if args.is_present("d") {
         let sanitized: Vec<u8> = buf.into_iter().clone().filter(|b| *b != 10).collect();
-        io::stdout().write_all(&decode::decode(&sanitized).unwrap());
+        let decoded = &decode::decode(&sanitized);
+
+        match decoded {
+            Ok(d) => io::stdout().write_all(&d).unwrap(),
+            Err(e) => println!("{}", e),
+        }
     } else {
-        io::stdout().write_all(encode::encode(&buf).unwrap().as_bytes());
+        let encoded = encode::encode(&buf);
+
+        match encoded {
+            Ok(e) => io::stdout().write_all(e.as_bytes()).unwrap(),
+            Err(e) => println!("{}", e),
+        }
     }
 }

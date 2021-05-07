@@ -46,13 +46,17 @@ fn compose_third_byte(third_sextet: Option<u8>, fourth_sextet: Option<u8>) -> u8
     }
 }
 
-pub fn decode(b64_string: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+pub fn decode(b64_string: &[u8]) -> Result<Vec<u8>, &str> {
     let decoding_table: HashMap<char, usize> = BASE64_ALPHABET
         .iter()
         .enumerate()
         .map(|(idx, c)| (*c, idx))
         .collect();
     let mut bytes: Vec<Option<u8>> = Vec::new();
+
+    if b64_string.len() % 4 != 0 {
+        return Err("Invalid data");
+    }
 
     for byte in b64_string {
         if *byte != b'=' {

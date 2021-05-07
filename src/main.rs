@@ -1,5 +1,4 @@
-mod decode;
-mod encode;
+mod lib;
 
 use clap::{App, Arg};
 use std::io::{self, Read, Write};
@@ -19,14 +18,14 @@ fn main() {
 
     if args.is_present("d") {
         let sanitized: Vec<u8> = buf.into_iter().clone().filter(|b| *b != 10).collect();
-        let decoded = &decode::decode(&sanitized);
+        let decoded = &lib::decode(&sanitized);
 
         match decoded {
             Ok(d) => io::stdout().write_all(&d).unwrap(),
             Err(e) => println!("{}", e),
         }
     } else {
-        let encoded = encode::encode(&buf);
+        let encoded = lib::encode(&buf);
 
         match encoded {
             Ok(e) => io::stdout().write_all(e.as_bytes()).unwrap(),

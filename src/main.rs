@@ -4,6 +4,7 @@ use clap::{App, Arg};
 use std::io::{self, Read, Write};
 
 fn main() {
+    dbg!(42);
     let args = App::new("base64")
         .arg(
             Arg::with_name("d")
